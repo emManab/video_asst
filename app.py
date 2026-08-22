@@ -7,299 +7,331 @@ from core.summarizer import summarize, generate_title
 from core.extractor import extract_action_items, extract_key_decisions, extract_questions
 from core.rag_engine import build_rag_chain, ask_question
 
-load_dotenv()
+load_dotenv(override=True)
 
 # ─── Page Config ────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI Video Assistant",
-    page_icon="🎬",
+    page_icon="🔥",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# ─── Custom CSS ─────────────────────────────────────────────────────────────────
+# ─── Custom CSS (Neo-Brutalism / Gen-Z) ─────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
 
-/* ── Root Variables ── */
 :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface-2: #1a1a25;
-    --border: #2a2a3a;
-    --accent: #7c3aed;
-    --accent-glow: #9f67ff;
-    --accent-2: #06b6d4;
-    --text: #e8e8f0;
-    --text-muted: #7070a0;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
+    --bg: #F4F0EA;       /* Cream background */
+    --text: #000000;     /* Pure black */
+    --accent: #FF3333;   /* Bright red */
+    --accent-blue: #3366FF;
+    --border: #000000;
 }
 
-/* ── Global Reset ── */
 html, body, [class*="css"] {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Space Grotesk', sans-serif;
     background-color: var(--bg) !important;
     color: var(--text) !important;
 }
 
 .stApp {
     background: var(--bg) !important;
+    background-image: radial-gradient(#000000 1.5px, transparent 1.5px);
+    background-size: 25px 25px;
+    background-color: var(--bg);
+    background-position: 0 0, 12.5px 12.5px;
 }
 
-/* Animated grid background */
-.stApp::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-image:
-        linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* ── Sidebar ── */
-[data-testid="stSidebar"] {
-    background: var(--surface) !important;
-    border-right: 1px solid var(--border) !important;
-}
-
-[data-testid="stSidebar"] * {
-    color: var(--text) !important;
-}
-
-/* ── Headings ── */
+/* Headings */
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Syne', sans-serif !important;
     color: var(--text) !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
 }
 
-/* ── Hero Title ── */
 .hero-title {
     font-family: 'Syne', sans-serif;
-    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-size: clamp(3rem, 7vw, 5.5rem);
     font-weight: 800;
-    line-height: 1.1;
+    line-height: 0.9;
     margin: 0;
-    background: linear-gradient(135deg, #ffffff 0%, var(--accent-glow) 50%, var(--accent-2) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text);
+    text-transform: uppercase;
+    text-shadow: 4px 4px 0px var(--accent);
 }
 
 .hero-sub {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    margin-top: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    background: var(--text);
+    color: var(--bg) !important;
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border: 3px solid var(--border);
+    transform: rotate(-1deg);
 }
 
-/* ── Cards ── */
+/* Brutalist Cards */
 .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    border: 3px solid var(--border);
+    border-radius: 0;
     padding: 1.5rem;
-    margin-bottom: 1rem;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
+    margin-bottom: 1.5rem;
+    box-shadow: 8px 8px 0px var(--border);
+    transition: all 0.2s ease;
 }
-
+.card * {
+    color: #000000 !important;
+}
 .card:hover {
-    border-color: var(--accent);
-}
-
-.card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 3px; height: 100%;
-    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    transform: translate(-4px, -4px);
+    box-shadow: 12px 12px 0px var(--accent-blue);
 }
 
 .card-title {
     font-family: 'Syne', sans-serif;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
+    font-size: 1.2rem;
+    font-weight: 800;
     text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    border-bottom: 3px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    color: #000000 !important;
 }
 
 .card-content {
-    font-size: 0.875rem;
-    line-height: 1.7;
-    color: var(--text);
-}
-
-/* ── Accent Badge ── */
-.badge {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.65rem;
+    font-size: 1rem;
+    line-height: 1.6;
     font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    color: #000000 !important;
 }
 
-.badge-purple { background: rgba(124,58,237,0.2); color: var(--accent-glow); border: 1px solid rgba(124,58,237,0.3); }
-.badge-cyan   { background: rgba(6,182,212,0.15); color: var(--accent-2);    border: 1px solid rgba(6,182,212,0.3); }
-.badge-green  { background: rgba(16,185,129,0.15); color: var(--success);    border: 1px solid rgba(16,185,129,0.3); }
-
-/* ── Input & Buttons ── */
+/* Inputs & Buttons */
 .stTextInput > div > div > input,
 .stSelectbox > div > div {
-    background: var(--surface-2) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 8px !important;
-    color: var(--text) !important;
-    font-family: 'JetBrains Mono', monospace !important;
+    background: #FFFFFF !important;
+    border: 3px solid var(--border) !important;
+    border-radius: 0 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 700 !important;
+    padding: 0.8rem !important;
+    box-shadow: 4px 4px 0px var(--border) !important;
+    transition: all 0.1s !important;
 }
 
-.stTextInput > div > div > input:focus {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 2px rgba(124,58,237,0.2) !important;
+/* Force text inside inputs and selectbox selection to be black */
+.stTextInput > div > div > input {
+    color: #000000 !important;
+}
+
+.stSelectbox > div > div,
+.stSelectbox > div > div *,
+.stSelectbox > div > div > div,
+.stSelectbox > div > div > div * {
+    color: #000000 !important;
+    font-family: 'Syne', sans-serif !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    font-size: 1.05rem !important;
+}
+
+.stTextInput > div > div > input:focus,
+.stSelectbox > div > div:focus {
+    box-shadow: 4px 4px 0px var(--accent) !important;
+    outline: none !important;
 }
 
 .stButton > button {
-    background: linear-gradient(135deg, var(--accent), #5b21b6) !important;
+    background: var(--accent) !important;
     color: white !important;
-    border: none !important;
-    border-radius: 8px !important;
+    border: 3px solid var(--border) !important;
+    border-radius: 0 !important;
     font-family: 'Syne', sans-serif !important;
-    font-weight: 700 !important;
-    font-size: 0.875rem !important;
-    letter-spacing: 0.05em !important;
-    padding: 0.6rem 1.5rem !important;
-    transition: all 0.2s !important;
+    font-weight: 800 !important;
+    font-size: 1.2rem !important;
     text-transform: uppercase !important;
+    padding: 1rem 2rem !important;
+    box-shadow: 6px 6px 0px var(--border) !important;
+    transition: all 0.1s !important;
+    width: 100%;
 }
 
 .stButton > button:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 8px 25px rgba(124,58,237,0.4) !important;
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 8px 8px 0px var(--border) !important;
+}
+.stButton > button:active {
+    transform: translate(2px, 2px) !important;
+    box-shadow: 2px 2px 0px var(--border) !important;
 }
 
-/* Secondary button */
-.stButton > button[kind="secondary"] {
-    background: var(--surface-2) !important;
-    border: 1px solid var(--border) !important;
+/* Chat Message styling */
+[data-testid="stChatMessage"] {
+    background: #FFFFFF;
+    color: #000000 !important;
+    border: 3px solid var(--border);
+    border-radius: 0;
+    box-shadow: 4px 4px 0px var(--border);
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+}
+[data-testid="stChatMessage"] * {
+    color: #000000 !important;
+}
+[data-testid="stChatMessage"] p {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 500 !important;
+    color: #000000 !important;
+}
+[data-testid="chatAvatarIcon-user"] {
+    background-color: var(--accent-blue) !important;
+}
+[data-testid="chatAvatarIcon-assistant"] {
+    background-color: var(--accent) !important;
 }
 
-/* ── Progress / Status ── */
-.status-bar {
+/* BOTTOM CONTAINER TRANSPARENT (Removes the full-width black bar) */
+[data-testid="stBottomBlockContainer"], 
+[data-testid="stBottom"], 
+[data-testid="stBottom"] > div,
+[data-testid="stBottom"] > div > div,
+.stChatFloatingInputContainer,
+.stChatFloatingInputContainer > div {
+    background: transparent !important;
+}
+
+/* SLEEK CHAT INPUT (Light Pill, Neo-Brutalist) */
+[data-testid="stChatInput"] {
+    background: #FFFFFF !important;
+    border: 3px solid var(--border) !important;
+    box-shadow: 6px 6px 0px var(--border) !important;
+    border-radius: 40px !important;
+    max-width: 768px !important;
+    margin: 0 auto !important;
+    padding: 0.3rem 0.5rem !important;
+    transition: all 0.2s ease;
+}
+/* Force inner wrappers to be transparent and remove default focus borders */
+[data-testid="stChatInput"] > div,
+[data-testid="stChatInput"] > div > div {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+[data-testid="stChatInput"] > div:focus-within,
+[data-testid="stChatInput"] > div > div:focus-within {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+[data-testid="stChatInput"]:focus-within {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px var(--accent-blue) !important;
+}
+[data-testid="stChatInput"] textarea {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 600 !important;
+    color: #000000 !important;
+    background: transparent !important;
+}
+[data-testid="stChatInput"] textarea::placeholder {
+    color: #888888 !important;
+}
+[data-testid="stChatInput"] button {
+    background: var(--text) !important;
+    color: #FFFFFF !important;
+    border-radius: 50% !important;
+    width: 38px !important;
+    height: 38px !important;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: var(--surface-2);
-    border-radius: 8px;
-    margin: 0.4rem 0;
-    border: 1px solid var(--border);
-    font-size: 0.8rem;
+    justify-content: center;
+    margin-right: 5px;
+    transition: all 0.2s !important;
+}
+[data-testid="stChatInput"] button:hover {
+    background: var(--accent) !important;
+    transform: scale(1.05);
 }
 
-.status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
+/* Expander (RAW Transcript) styling */
+[data-testid="stExpander"] {
+    background: #FFFFFF !important;
+    border: 3px solid var(--border) !important;
+    border-radius: 0 !important;
+    box-shadow: 6px 6px 0px var(--border) !important;
+    margin-bottom: 1.5rem !important;
+    color: #000000 !important;
+}
+[data-testid="stExpander"] summary {
+    padding: 1rem !important;
+    font-family: 'Syne', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 1.1rem !important;
+    text-transform: uppercase !important;
+    color: #000000 !important;
+}
+[data-testid="stExpander"] summary * {
+    color: #000000 !important;
+}
+[data-testid="stExpander"] summary:hover {
+    background: #F4F0EA !important;
 }
 
-.dot-active   { background: var(--accent-glow); box-shadow: 0 0 8px var(--accent-glow); animation: pulse 1.5s infinite; }
-.dot-done     { background: var(--success); }
-.dot-pending  { background: var(--border); }
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.4; }
-}
-
-/* ── Chat ── */
-.chat-container {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.25rem;
-    max-height: 420px;
-    overflow-y: auto;
-    margin-bottom: 1rem;
-}
-
-.chat-msg {
-    margin-bottom: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-}
-
-.chat-label {
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-}
-
-.chat-bubble {
-    display: inline-block;
-    padding: 0.6rem 1rem;
-    border-radius: 10px;
-    font-size: 0.85rem;
-    line-height: 1.6;
-    max-width: 90%;
-}
-
-.user-label  { color: var(--accent-glow); }
-.bot-label   { color: var(--accent-2); }
-
-.user-bubble { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.25); align-self: flex-end; }
-.bot-bubble  { background: rgba(6,182,212,0.1);  border: 1px solid rgba(6,182,212,0.2);   align-self: flex-start; }
-
-/* ── Divider ── */
-hr {
-    border: none !important;
-    border-top: 1px solid var(--border) !important;
-    margin: 1.5rem 0 !important;
-}
-
-/* ── Transcript box ── */
+/* Transcript Box */
 .transcript-box {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1.25rem;
-    font-size: 0.82rem;
-    line-height: 1.8;
-    max-height: 300px;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    border: 3px solid var(--border);
+    padding: 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-height: 350px;
     overflow-y: auto;
-    color: var(--text-muted);
-    white-space: pre-wrap;
-    word-break: break-word;
+    font-weight: 500;
+    box-shadow: inset 4px 4px 0px rgba(0,0,0,0.05);
 }
 
-/* ── Stale Streamlit elements ── */
-.stProgress > div > div > div { background: var(--accent) !important; }
-.stSpinner > div { border-top-color: var(--accent) !important; }
-[data-testid="stMarkdownContainer"] p { color: var(--text) !important; }
-label { color: var(--text-muted) !important; font-size: 0.8rem !important; }
+/* Status dots */
+.status-bar {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    border: 3px solid var(--border);
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 600;
+    box-shadow: 3px 3px 0px var(--border);
+}
+.status-bar span, .status-bar p, .status-bar div {
+    color: #000000 !important;
+}
+.status-dot { width: 12px; height: 12px; border: 2px solid var(--border); }
+.dot-active { background: var(--accent); animation: blink 1s infinite; }
+.dot-done { background: #00FF00; }
+.dot-pending { background: #FFFFFF; }
+@keyframes blink { 50% { opacity: 0; } }
 
-/* scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+/* Overrides */
+[data-testid="stMarkdownContainer"] p { color: #000000 !important; }
+label { color: var(--text) !important; font-family: 'Space Grotesk', sans-serif !important; font-weight: 700 !important; font-size: 1.1rem !important; text-transform: uppercase; }
+
+/* Make main block slightly narrower for better readability if desired */
+.block-container {
+    max-width: 1200px !important;
+}
+
+/* Hide Sidebar toggle */
+[data-testid="collapsedControl"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -307,239 +339,171 @@ label { color: var(--text-muted) !important; font-size: 0.8rem !important; }
 for key, default in {
     "result": None,
     "chat_history": [],
-    "processing": False,
     "pipeline_done": False,
-    "pipeline_steps": {},
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
 
-# ─── Helpers ────────────────────────────────────────────────────────────────────
-def step_status(steps: dict, key: str) -> str:
-    s = steps.get(key, "pending")
-    if s == "active":  return "dot-active"
-    if s == "done":    return "dot-done"
-    return "dot-pending"
 
-def render_step_bar(label: str, key: str, icon: str):
-    css = step_status(st.session_state.pipeline_steps, key)
-    st.markdown(f"""
-    <div class="status-bar">
-        <div class="status-dot {css}"></div>
-        <span>{icon} {label}</span>
-    </div>""", unsafe_allow_html=True)
+# ─── Main Header ──────────────────────────────────────────────────────────────────
+st.markdown('<div class="hero-title">AI VIDEO</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-sub">NO MORE BORING MEETINGS</div>', unsafe_allow_html=True)
+st.markdown("<br><br>", unsafe_allow_html=True)
 
-# ─── Sidebar ────────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown('<div class="hero-title" style="font-size:1.6rem">🎬 AI<br>Video</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-sub">Meeting Intelligence</div>', unsafe_allow_html=True)
-    st.markdown("---")
 
-    st.markdown('<span class="badge badge-purple">Input</span>', unsafe_allow_html=True)
-    source = st.text_input("YouTube URL or File Path", placeholder="https://youtube.com/watch?v=... or /path/to/file.mp4")
+# ─── Input Section ────────────────────────────────────────────────────────────────
+if not st.session_state.result:
+    st.markdown("""
+    <div class="card" style="box-shadow: 12px 12px 0px var(--accent);">
+        <div class="card-title">🔥 DROP YOUR LINK</div>
+        <div class="card-content">
+    """, unsafe_allow_html=True)
 
-    language = st.selectbox("Language", ["english", "hinglish"], index=0)
+    col1, col2 = st.columns([3, 1], gap="large")
+    with col1:
+        source = st.text_input("URL OR FILE PATH", placeholder="https://youtube.com/watch?v=...")
+    with col2:
+        language = st.selectbox("AUDIO LANGUAGE", ["english", "hinglish"], index=0)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    btn_col = st.empty()
+    run_btn = False
+    cancel_btn = False
 
-    run_btn = st.button("⚡  Analyse", use_container_width=True)
-
-    if st.session_state.pipeline_done:
-        st.markdown("---")
-        st.markdown('<span class="badge badge-green">Pipeline Status</span>', unsafe_allow_html=True)
-        for step, icon, label in [
-            ("audio",      "🔊", "Audio Processing"),
-            ("transcript", "📝", "Transcription"),
-            ("title",      "🏷️", "Title Generation"),
-            ("summary",    "📋", "Summarisation"),
-            ("extract",    "🔍", "Extraction"),
-            ("rag",        "🧠", "RAG Engine"),
-        ]:
-            render_step_bar(label, step, icon)
-
-# ─── Main Area ──────────────────────────────────────────────────────────────────
-st.markdown('<div class="hero-title">AI Video Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-sub">Transcribe · Summarise · Chat with your meetings</div>', unsafe_allow_html=True)
-st.markdown("---")
-
-# ── Run Pipeline ────────────────────────────────────────────────────────────────
-if run_btn:
-    if not source.strip():
-        st.error("Please enter a YouTube URL or file path.")
+    if not st.session_state.get("processing", False):
+        run_btn = btn_col.button("IGNITE ANALYSIS", icon=":material/rocket_launch:")
     else:
-        st.session_state.pipeline_done = False
-        st.session_state.result = None
-        st.session_state.chat_history = []
-        st.session_state.pipeline_steps = {}
+        cancel_btn = btn_col.button("CANCEL 🛑", type="primary")
 
-        progress_placeholder = st.empty()
+    if cancel_btn:
+        st.session_state.processing = False
+        st.rerun()
 
-        def update_step(key, state):
-            st.session_state.pipeline_steps[key] = state
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
+    # ── Run Pipeline ────────────────────────────────────────────────────────────────
+    if run_btn:
+        if not source.strip():
+            st.error("Please enter a YouTube URL or file path.")
+        else:
+            st.session_state.processing = True
+            st.session_state.pipeline_done = False
+            st.session_state.result        = None
+            st.session_state.chat_history  = []
+            st.rerun()
+
+    if st.session_state.get("processing", False):
         try:
-            with progress_placeholder.container():
-                st.info("⚙️ Pipeline running — see sidebar for live status…")
+            with st.status("⚙️ PROCESSING…", expanded=True) as status:
+                # ── Step 1: Audio
+                status.update(label="🔊 RIPPING AUDIO…")
+                st.write("Extracting chunks...")
+                chunks = process_input(source)
 
-            update_step("audio", "active")
-            chunks = process_input(source)
-            update_step("audio", "done")
+                # ── Step 2: Transcription
+                status.update(label="📝 LISTENING…")
+                st.write("Transcribing audio to English...")
+                transcript = transcribe_all(chunks, language)
 
-            update_step("transcript", "active")
-            transcript = transcribe_all(chunks, language)
-            update_step("transcript", "done")
+                # ── Step 3: Title
+                status.update(label="🏷️ NAMING IT…")
+                st.write("Generating title...")
+                title = generate_title(transcript)
 
-            update_step("title", "active")
-            title = generate_title(transcript)
-            update_step("title", "done")
+                # ── Step 4: Summary
+                status.update(label="📋 SUMMARIZING…")
+                st.write("Building summary...")
+                summary = summarize(transcript)
 
-            update_step("summary", "active")
-            summary = summarize(transcript)
-            update_step("summary", "done")
+                # ── Step 5: Extraction
+                status.update(label="🔍 EXTRACTING INTEL…")
+                st.write("Pulling action items and decisions...")
+                action_items = extract_action_items(transcript)
+                decisions    = extract_key_decisions(transcript)
+                questions    = extract_questions(transcript)
 
-            update_step("extract", "active")
-            action_items  = extract_action_items(transcript)
-            decisions     = extract_key_decisions(transcript)
-            questions     = extract_questions(transcript)
-            update_step("extract", "done")
+                # ── Step 6: RAG
+                status.update(label="🧠 WAKING UP AI…")
+                st.write("Preparing chat engine...")
+                rag_chain = build_rag_chain(transcript)
 
-            update_step("rag", "active")
-            rag_chain = build_rag_chain(transcript)
-            update_step("rag", "done")
+                status.update(label="✅ DONE!", state="complete", expanded=False)
 
             st.session_state.result = {
-                "title": title,
-                "transcript": transcript,
-                "summary": summary,
+                "title":        title,
+                "transcript":   transcript,
+                "summary":      summary,
                 "action_items": action_items,
                 "key_decisions": decisions,
                 "open_questions": questions,
-                "rag_chain": rag_chain,
+                "rag_chain":    rag_chain,
             }
             st.session_state.pipeline_done = True
-            progress_placeholder.success("✅ Analysis complete!")
-            time.sleep(0.5)
-            progress_placeholder.empty()
+            st.session_state.processing = False
+            time.sleep(0.4)
             st.rerun()
 
         except Exception as e:
-            for k in ["audio","transcript","title","summary","extract","rag"]:
-                if st.session_state.pipeline_steps.get(k) == "active":
-                    st.session_state.pipeline_steps[k] = "pending"
-            progress_placeholder.error(f"❌ Error: {e}")
+            st.error(f"❌ Error: {e}")
+            st.session_state.processing = False
 
-# ── Results ──────────────────────────────────────────────────────────────────────
+# ─── Results Dashboard ──────────────────────────────────────────────────────────
 if st.session_state.result:
     r = st.session_state.result
 
-    # Title banner
-    st.markdown(f"""
-    <div class="card">
-        <div class="card-title">📌 Session Title</div>
-        <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:var(--text)">
-            {r['title']}
-        </div>
-    </div>""", unsafe_allow_html=True)
-
-    # Top row: summary + transcript
-    col1, col2 = st.columns([3, 2], gap="medium")
-
-    with col1:
+    # Title banner & New Analysis Button
+    col_t1, col_t2 = st.columns([4, 1], gap="large")
+    with col_t1:
         st.markdown(f"""
-        <div class="card">
-            <div class="card-title">📋 Summary</div>
-            <div class="card-content">{r['summary']}</div>
+        <div class="card" style="border-color: var(--accent); box-shadow: 12px 12px 0px var(--accent);">
+            <div class="card-title">TITLE</div>
+            <div style="font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;text-transform:uppercase;">{r['title']}</div>
         </div>""", unsafe_allow_html=True)
-
-    with col2:
-        with st.expander("📝 Full Transcript", expanded=False):
-            st.markdown(f'<div class="transcript-box">{r["transcript"]}</div>', unsafe_allow_html=True)
-
-    # Second row: action items | decisions | questions
-    c1, c2, c3 = st.columns(3, gap="medium")
-
-    with c1:
-        st.markdown(f"""
-        <div class="card">
-            <div class="card-title">✅ Action Items</div>
-            <div class="card-content">{r['action_items']}</div>
-        </div>""", unsafe_allow_html=True)
-
-    with c2:
-        st.markdown(f"""
-        <div class="card">
-            <div class="card-title">🔑 Key Decisions</div>
-            <div class="card-content">{r['key_decisions']}</div>
-        </div>""", unsafe_allow_html=True)
-
-    with c3:
-        st.markdown(f"""
-        <div class="card">
-            <div class="card-title">❓ Open Questions</div>
-            <div class="card-content">{r['open_questions']}</div>
-        </div>""", unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # ── RAG Chat ──────────────────────────────────────────────────────────────
-    st.markdown('<div style="font-family:\'Syne\',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:1rem">💬 Chat with your Meeting</div>', unsafe_allow_html=True)
-
-    # Chat history display
-    if st.session_state.chat_history:
-        chat_html = '<div class="chat-container">'
-        for msg in st.session_state.chat_history:
-            if msg["role"] == "user":
-                chat_html += f"""
-                <div class="chat-msg" style="align-items:flex-end">
-                    <span class="chat-label user-label">You</span>
-                    <div class="chat-bubble user-bubble">{msg['content']}</div>
-                </div>"""
-            else:
-                chat_html += f"""
-                <div class="chat-msg" style="align-items:flex-start">
-                    <span class="chat-label bot-label">🤖 Assistant</span>
-                    <div class="chat-bubble bot-bubble">{msg['content']}</div>
-                </div>"""
-        chat_html += '</div>'
-        st.markdown(chat_html, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div class="card" style="text-align:center;padding:2rem">
-            <div style="font-size:2rem;margin-bottom:0.5rem">💬</div>
-            <div style="color:var(--text-muted);font-size:0.85rem">Ask anything about your meeting transcript</div>
-        </div>""", unsafe_allow_html=True)
-
-    # Chat input
-    chat_col1, chat_col2 = st.columns([5, 1], gap="small")
-    with chat_col1:
-        user_input = st.text_input("Your question", placeholder="What were the main decisions made?", label_visibility="collapsed")
-    with chat_col2:
-        send_btn = st.button("Send →", use_container_width=True)
-
-    if send_btn and user_input.strip():
-        with st.spinner("Thinking…"):
-            answer = ask_question(r["rag_chain"], user_input.strip())
-        st.session_state.chat_history.append({"role": "user",      "content": user_input.strip()})
-        st.session_state.chat_history.append({"role": "assistant", "content": answer})
-        st.rerun()
-
-    if st.session_state.chat_history:
-        if st.button("🗑️ Clear Chat", type="secondary"):
+    with col_t2:
+        if st.button("NEW ANALYSIS 🔄", use_container_width=True):
+            st.session_state.result = None
+            st.session_state.processing = False
+            st.session_state.pipeline_done = False
             st.session_state.chat_history = []
             st.rerun()
 
-else:
-    # Empty state
-    st.markdown("""
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 2rem;text-align:center">
-        <div style="font-size:4rem;margin-bottom:1rem">🎬</div>
-        <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;color:var(--text);margin-bottom:0.5rem">
-            Ready to Analyse
-        </div>
-        <div style="color:var(--text-muted);font-size:0.85rem;max-width:380px;line-height:1.7">
-            Paste a YouTube URL or local file path in the sidebar, choose your language, and hit <strong>Analyse</strong> to get started.
-        </div>
-        <div style="margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center">
-            <span class="badge badge-purple">Transcription</span>
-            <span class="badge badge-cyan">Summarisation</span>
-            <span class="badge badge-green">RAG Chat</span>
-        </div>
-    </div>""", unsafe_allow_html=True)
+    col1, col2 = st.columns([1, 1], gap="large")
+    with col1:
+        st.markdown(f'<div class="card"><div class="card-title">TL;DR SUMMARY</div><div class="card-content">{r["summary"]}</div></div>', unsafe_allow_html=True)
+    with col2:
+        with st.expander("FULL TRANSCRIPT (RAW)"):
+            st.markdown(f'<div class="transcript-box">{r["transcript"]}</div>', unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns(3, gap="large")
+    with c1: st.markdown(f'<div class="card" style="box-shadow: 6px 6px 0px #00FF00;"><div class="card-title">DO THIS</div><div class="card-content">{r["action_items"]}</div></div>', unsafe_allow_html=True)
+    with c2: st.markdown(f'<div class="card" style="box-shadow: 6px 6px 0px var(--accent-blue);"><div class="card-title">DECIDED</div><div class="card-content">{r["key_decisions"]}</div></div>', unsafe_allow_html=True)
+    with c3: st.markdown(f'<div class="card" style="box-shadow: 6px 6px 0px var(--accent);"><div class="card-title">UNANSWERED</div><div class="card-content">{r["open_questions"]}</div></div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown('<div class="hero-title" style="font-size:2.5rem; margin-bottom:1rem; text-shadow: 3px 3px 0px var(--accent-blue);">INTERROGATE THE AI</div>', unsafe_allow_html=True)
+
+    # Chat history
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+    
+    # Render reset button if history exists
+    if st.session_state.chat_history:
+        if st.button("NUKE CHAT 💥", key="reset_chat"):
+            st.session_state.chat_history = []
+            st.rerun()
+            
+    # Add some bottom padding so chat input doesn't overlap reset button
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+
+    # Chat input fixed at bottom
+    if prompt := st.chat_input("Ask something about the meeting..."):
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                answer = ask_question(r["rag_chain"], prompt)
+                st.markdown(answer)
+        st.session_state.chat_history.append({"role": "assistant", "content": answer})
