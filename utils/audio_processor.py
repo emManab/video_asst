@@ -71,12 +71,27 @@ def download_youtube_audio(url: str) -> str:
 
 
 def convert_to_wav(input_path: str) -> str:
-    if not PYDUB_AVAILABLE:
-        raise RuntimeError("pydub is not available.")
+    """Convert any local audio/video file to WAV using ffmpeg directly (more robust than pydub for video files)."""
+    import subprocess
     output_path = os.path.splitext(input_path)[0] + "_converted.wav"
-    audio = AudioSegment.from_file(input_path)
-    audio = audio.set_channels(1).set_frame_rate(16000)
-    audio.export(output_path, format="wav")
+    cmd = [
+        "ffmpeg", "-y",          # -y = overwrite output if exists
+        "-i", input_path,
+        "-vn",                   # drop video stream, audio only
+        "-acodec", "pcm_s16le",  # WAV format
+        "-ar", "16000",          # 16kHz sample rate for Whisper
+        "-ac", "1",              # mono
+        output_path
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        # Fallback to pydub
+        if PYDUB_AVAILABLE:
+            audio = AudioSegment.from_file(input_path)
+            audio = audio.set_channels(1).set_frame_rate(16000)
+            audio.export(output_path, format="wav")
+        else:
+            raise RuntimeError(f"ffmpeg failed (code {result.returncode}): {result.stderr[-500:]}")
     return output_path
 
 

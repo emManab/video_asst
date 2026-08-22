@@ -1,6 +1,7 @@
 import whisper
 import os
 import requests
+import threading
 from pydub import AudioSegment
 from utils.audio_processor import TextTranscript
 
@@ -13,20 +14,24 @@ SARVAM_STT_TRANSLATE_URL = "https://api.sarvam.ai/speech-to-text-translate"
 SARVAM_MODEL = os.getenv("SARVAM_STT_MODEL", "saaras:v2.5")
 
 _model = None
+_whisper_lock = threading.Lock()
 
 
 def load_model():
     global _model
     if _model is None:
-        print(f"Loading Whisper model: {WHISPER_MODEL} ...")
-        _model = whisper.load_model(WHISPER_MODEL)
-        print("Whisper model loaded.")
+        with _whisper_lock:
+            if _model is None:
+                print(f"Loading Whisper model: {WHISPER_MODEL} ...")
+                _model = whisper.load_model(WHISPER_MODEL)
+                print("Whisper model loaded.")
     return _model
 
 
 def transcribe_chunk_whisper(chunk_path: str) -> str:
     model = load_model()
-    result = model.transcribe(chunk_path, task="transcribe")
+    with _whisper_lock:
+        result = model.transcribe(chunk_path, task="transcribe")
     return result["text"]
 
 

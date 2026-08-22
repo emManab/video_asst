@@ -421,6 +421,7 @@ if not st.session_state.result:
                 import tempfile
                 suffix = os.path.splitext(uploaded_file.name)[-1]
                 with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    uploaded_file.seek(0)
                     tmp.write(uploaded_file.read())
                     st.session_state["upload_path"] = tmp.name
                 st.session_state["input_source"] = "__upload__"
