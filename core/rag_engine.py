@@ -27,13 +27,11 @@ def build_rag_chain(transcript:str):
 
         [(
             "system",
-            """You are an expert meeting assistant. Answer the user's question 
-based ONLY on the meeting transcript context provided below.
+            """You are an expert meeting assistant. You have access to the following meeting transcript context.
+Answer the user's question. If the context is relevant, use it to provide a detailed and accurate answer.
+If the answer is not found in the context, use your general knowledge to answer the question, but politely mention that it was not discussed in the meeting transcript.
 
-If the answer is not found in the context, say: 
-"I could not find this information in the meeting transcript."
-
-Always be concise and precise. If quoting someone, mention it clearly.
+Always be helpful, concise, and precise.
 
 Context from meeting transcript:
 {context}""",
@@ -57,19 +55,17 @@ Context from meeting transcript:
 
 def load_rag_chain():
     vector_store = load_vector_store()
-    retriver = get_retriever()
+    retriever = get_retriever(vector_store)
 
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
         (
             "system",
-            """You are an expert meeting assistant. Answer the user's question 
-based ONLY on the meeting transcript context provided below.
+            """You are an expert meeting assistant. You have access to the following meeting transcript context.
+Answer the user's question. If the context is relevant, use it to provide a detailed and accurate answer.
+If the answer is not found in the context, use your general knowledge to answer the question, but politely mention that it was not discussed in the meeting transcript.
 
-If the answer is not found in the context, say: 
-"I could not find this information in the meeting transcript."
-
-Always be concise and precise. If quoting someone, mention it clearly.
+Always be helpful, concise, and precise.
 
 Context from meeting transcript:
 {context}""",
@@ -79,7 +75,7 @@ Context from meeting transcript:
 
     rag_chain = (
         {
-            "context":  retriver| RunnableLambda(format_docs),
+            "context":  retriever| RunnableLambda(format_docs),
             "question": RunnablePassthrough(),
         }
         | prompt
