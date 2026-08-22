@@ -160,7 +160,7 @@ Then edit `.env` and fill in your API keys:
 ```env
 MISTRAL_API_KEY=your_mistral_api_key_here
 SARVAM_API_KEY=your_sarvam_api_key_here   # Only needed for Hinglish mode
-WHISPER_MODEL=small
+WHISPER_MODEL=tiny
 SARVAM_STT_MODEL=saaras:v2.5
 ```
 
@@ -199,7 +199,7 @@ Follow the prompts to enter a YouTube URL or local file path and choose the lang
 |---|---|---|---|
 | `MISTRAL_API_KEY` | ✅ Yes | — | Mistral AI API key for LLM tasks |
 | `SARVAM_API_KEY` | ⚠️ Hinglish only | — | Sarvam AI key for Hindi/Hinglish STT |
-| `WHISPER_MODEL` | ❌ Optional | `small` | Whisper model size: `tiny` / `base` / `small` / `medium` / `large` |
+| `WHISPER_MODEL` | ❌ Optional | `tiny` | Whisper model size: `tiny` / `base` / `small` / `medium` / `large` |
 | `SARVAM_STT_MODEL` | ❌ Optional | `saaras:v2.5` | Sarvam model version |
 
 ---
