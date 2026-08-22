@@ -1,13 +1,26 @@
+import os
 import streamlit as st
 import time
-from dotenv import load_dotenv
+
+# Local dev: load from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=True)
+except ImportError:
+    pass
+
+# Streamlit Cloud: load from st.secrets
+try:
+    for _k, _v in st.secrets.items():
+        os.environ.setdefault(str(_k), str(_v))
+except Exception:
+    pass
+
 from utils.audio_processor import process_input
 from core.transcriber import transcribe_all
 from core.summarizer import summarize, generate_title
 from core.extractor import extract_action_items, extract_key_decisions, extract_questions
 from core.rag_engine import build_rag_chain, ask_question
-
-load_dotenv(override=True)
 
 # ─── Page Config ────────────────────────────────────────────────────────────────
 st.set_page_config(
