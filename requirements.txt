@@ -1,7 +1,5 @@
 yt-dlp
 pydub
-pyaudioop
-audioop-lts
 ffmpeg-python
 openai-whisper
 torch
