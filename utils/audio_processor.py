@@ -57,7 +57,7 @@ def fetch_youtube_transcript(url: str):
 def download_youtube_audio(url: str) -> str:
     if not YT_DLP_AVAILABLE:
         raise RuntimeError("yt-dlp is not installed.")
-    output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
+    output_path = os.path.join(DOWNLOAD_DIR, "%(id)s.%(ext)s")
     
     # Try different client spoofs if YouTube blocks the cloud IP with a 403 Forbidden
     client_configs = [
@@ -80,8 +80,10 @@ def download_youtube_audio(url: str) -> str:
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
-                filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
-                return filename
+                # FFmpegExtractAudio replaces the actual file on disk with .wav
+                # So we take the base path and append .wav
+                base, _ = os.path.splitext(ydl.prepare_filename(info))
+                return base + ".wav"
         except Exception as e:
             last_error = e
             if "403" not in str(e) and "Forbidden" not in str(e):
