@@ -1,5 +1,7 @@
 yt-dlp
 pydub
+pyaudioop
+audioop-lts
 ffmpeg-python
 openai-whisper
 torch
@@ -16,10 +18,7 @@ langchain-huggingface
 huggingface-hub
 tiktoken
 streamlit>=1.35.0
-streamlit-extras
 watchdog
-reportlab
-fpdf2
 python-dotenv
 numpy
 tqdm
