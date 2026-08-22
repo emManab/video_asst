@@ -58,17 +58,48 @@ def download_youtube_audio(url: str) -> str:
     if not YT_DLP_AVAILABLE:
         raise RuntimeError("yt-dlp is not installed.")
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": output_path,
-        "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav", "preferredquality": "192"}],
-        "quiet": True,
-        "extractor_args": {"youtube": {"player_client": ["android", "web"]}}
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
-    return filename
+    
+    # Try different client spoofs if YouTube blocks the cloud IP with a 403 Forbidden
+    client_configs = [
+        {"youtube": {"player_client": ["android", "web"]}},
+        {"youtube": {"player_client": ["ios"]}},
+        {"youtube": {"player_client": ["android_vr"]}},
+        {} # fallback to default
+    ]
+    
+    last_error = None
+    for config in client_configs:
+        try:
+            print(f"Trying yt-dlp config: {config}")
+            ydl_opts = {
+                "format": "bestaudio/best",
+                "outtmpl": output_path,
+                "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav", "preferredquality": "192"}],
+                "quiet": True,
+                "extractor_args": config
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
+                return filename
+        except Exception as e:
+            last_error = e
+            if "403" not in str(e) and "Forbidden" not in str(e):
+                # If it's a legitimate error (e.g., video deleted), don't retry
+                pass 
+    
+    error_msg = str(last_error)
+    if "403" in error_msg or "Forbidden" in error_msg:
+        raise RuntimeError(
+            "YouTube's anti-bot system blocked the server from downloading this video. \n\n"
+            "**💡 How to fix this:** \n"
+            "1. Use a YouTube video that has **Closed Captions (CC) enabled** (the app will grab the text instantly without downloading).\n"
+            "2. Or, download the video to your computer and use the **'Upload File'** tab!"
+        )
+    elif "unavailable" in error_msg.lower():
+        raise RuntimeError("This YouTube video is unavailable, private, or has been deleted. Please check the link.")
+    else:
+        raise RuntimeError(f"Failed to process YouTube video. Reason: {last_error}")
 
 
 def convert_to_wav(input_path: str) -> str:
