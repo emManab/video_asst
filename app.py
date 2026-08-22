@@ -372,12 +372,29 @@ if not st.session_state.result:
         <div class="card-content">
     """, unsafe_allow_html=True)
 
-    col1, col2 = st.columns([3, 1], gap="large")
-    with col1:
-        source = st.text_input("URL OR FILE PATH", placeholder="https://youtube.com/watch?v=...")
-    with col2:
-        language = st.selectbox("AUDIO LANGUAGE", ["english", "hinglish"], index=0)
-    
+    tab1, tab2 = st.tabs(["🔗 YouTube / URL", "📁 Upload File"])
+
+    with tab1:
+        col1, col2 = st.columns([3, 1], gap="large")
+        with col1:
+            source_url = st.text_input("YOUTUBE URL", placeholder="https://youtube.com/watch?v=...", label_visibility="visible")
+        with col2:
+            language = st.selectbox("AUDIO LANGUAGE", ["english", "hinglish"], index=0)
+        st.markdown('<small style="color:#888;">⚠️ Works best with videos that have <b>captions (CC)</b> enabled.</small>', unsafe_allow_html=True)
+
+    with tab2:
+        uploaded_file = st.file_uploader(
+            "UPLOAD AUDIO OR VIDEO",
+            type=["mp3", "mp4", "wav", "m4a", "webm", "ogg", "flac", "mkv", "avi", "mov"],
+            help="Upload any audio or video file from your computer."
+        )
+        if tab2:
+            language = st.selectbox("AUDIO LANGUAGE ", ["english", "hinglish"], index=0, key="lang_upload")
+
+    # Determine active source
+    source = source_url.strip() if source_url else ""
+    has_file = uploaded_file is not None
+
     st.markdown("<br>", unsafe_allow_html=True)
     btn_col = st.empty()
     run_btn = False
@@ -396,9 +413,19 @@ if not st.session_state.result:
 
     # ── Run Pipeline ────────────────────────────────────────────────────────────────
     if run_btn:
-        if not source.strip():
-            st.error("Please enter a YouTube URL or file path.")
+        if not source and not has_file:
+            st.error("Please enter a YouTube URL or upload a file.")
         else:
+            # Save uploaded file to a temp path
+            if has_file:
+                import tempfile
+                suffix = os.path.splitext(uploaded_file.name)[-1]
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    tmp.write(uploaded_file.read())
+                    st.session_state["upload_path"] = tmp.name
+                st.session_state["input_source"] = "__upload__"
+            else:
+                st.session_state["input_source"] = source
             st.session_state.processing = True
             st.session_state.pipeline_done = False
             st.session_state.result        = None
@@ -406,12 +433,17 @@ if not st.session_state.result:
             st.rerun()
 
     if st.session_state.get("processing", False):
+        # Resolve the source for this run
+        _source = st.session_state.get("input_source", "")
+        if _source == "__upload__":
+            _source = st.session_state.get("upload_path", "")
         try:
             with st.status("⚙️ PROCESSING…", expanded=True) as status:
                 # ── Step 1: Audio
                 status.update(label="🔊 RIPPING AUDIO…")
                 st.write("Extracting chunks...")
-                chunks = process_input(source)
+                chunks = process_input(_source)
+
 
                 # ── Step 2: Transcription
                 status.update(label="📝 LISTENING…")
